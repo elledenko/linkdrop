@@ -1,0 +1,18 @@
+{
+  "project_name": "linkdrop",
+  "version": "0.1.0",
+  "status": "active",
+  "current_phase": "setup",
+  "cycle": 1,
+  "created_at": "2026-03-31T23:32:00Z",
+  "updated_at": "2026-03-31T23:32:00Z",
+  "repository": null,
+  "vercel_url": null,
+  "stack": {
+    "frontend": "Next.js 15 + Tailwind CSS 4",
+    "backend": "Supabase (Auth, Postgres, Storage, Edge Functions)",
+    "database": "Supabase Postgres",
+    "ai": "Claude API (Opus 4.6)",
+    "deployment": "Vercel"
+  }
+}
