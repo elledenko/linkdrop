@@ -71,6 +71,8 @@ export default function SettingsPage() {
         timezone: profile.timezone,
         digest_hour: profile.digest_hour,
         digest_enabled: profile.digest_enabled,
+        phone_number: profile.phone_number?.trim() || null,
+        sms_enabled: profile.sms_enabled,
       }),
     });
 
@@ -309,6 +311,63 @@ export default function SettingsPage() {
               />
             </button>
           </div>
+        </section>
+
+        {/* SMS */}
+        <section className="bg-cream-light border border-border rounded-2xl p-6 space-y-5">
+          <h2 className="text-lg font-bold text-text">SMS</h2>
+          <p className="text-sm text-text-secondary">
+            Text links directly to LinkDrop from your phone.
+          </p>
+
+          <div>
+            <label className="block text-sm font-medium text-text mb-1.5">
+              Your phone number
+            </label>
+            <input
+              type="tel"
+              value={profile.phone_number || ""}
+              onChange={(e) =>
+                setProfile({ ...profile, phone_number: e.target.value })
+              }
+              className="w-full px-4 py-3 bg-cream border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
+              placeholder="+1 (555) 123-4567"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-text">
+              SMS enabled
+            </label>
+            <button
+              onClick={() =>
+                setProfile({
+                  ...profile,
+                  sms_enabled: !profile.sms_enabled,
+                })
+              }
+              className={`w-10 h-6 rounded-full transition-colors relative ${
+                profile.sms_enabled ? "bg-primary" : "bg-border"
+              }`}
+            >
+              <div
+                className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${
+                  profile.sms_enabled ? "translate-x-5" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          {process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER && (
+            <div className="p-4 bg-cream border border-border rounded-xl">
+              <p className="text-sm text-text">
+                Text links to:{" "}
+                <span className="font-mono font-medium">
+                  {process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER}
+                </span>
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Bookmarklet */}

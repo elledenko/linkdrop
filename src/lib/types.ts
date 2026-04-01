@@ -6,6 +6,8 @@ export interface Profile {
   timezone: string;
   digest_hour: number;
   digest_enabled: boolean;
+  phone_number: string | null;
+  sms_enabled: boolean;
   onboarding_complete: boolean;
   created_at: string;
   updated_at: string;

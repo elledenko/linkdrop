@@ -43,6 +43,7 @@ export default function OnboardingPage() {
   const [sampleSource, setSampleSource] = useState("");
   const [sampleUrl, setSampleUrl] = useState("");
   const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [timezone, setTimezone] = useState("America/New_York");
   const [digestHour, setDigestHour] = useState(18);
   const [loading, setLoading] = useState(false);
@@ -126,6 +127,8 @@ export default function OnboardingPage() {
           display_name: displayName || null,
           bio: bio || null,
           voice_description: voiceDescription || null,
+          phone_number: phoneNumber.trim() || null,
+          sms_enabled: !!phoneNumber.trim(),
           timezone,
           digest_hour: digestHour,
           onboarding_complete: true,
@@ -232,6 +235,22 @@ export default function OnboardingPage() {
                 rows={3}
                 className="w-full px-4 py-3 bg-cream-light border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-text placeholder:text-text-secondary/50 resize-none"
                 placeholder='e.g., "Casual but smart. I use humor and analogies. Short paragraphs."'
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5">
+                Phone number (optional)
+              </label>
+              <p className="text-xs text-text-secondary mb-2">
+                Add your number to text links directly to LinkDrop
+              </p>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="w-full px-4 py-3 bg-cream-light border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-text placeholder:text-text-secondary/50"
+                placeholder="+1 (555) 123-4567"
               />
             </div>
           </div>

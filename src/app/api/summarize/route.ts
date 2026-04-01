@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { extractFromUrl } from "@/lib/extractor";
 import { summarizeContent } from "@/lib/claude";
@@ -6,13 +6,30 @@ import { summarizeContent } from "@/lib/claude";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Support service-role auth for webhook-triggered summarization
+  const authHeader = request.headers.get("authorization");
+  const isServiceRole =
+    authHeader === `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  let supabase;
+  let userId: string;
+
+  if (isServiceRole) {
+    supabase = await createAdminClient();
+    const body = await request.clone().json();
+    userId = body.userId;
+    if (!userId) {
+      return NextResponse.json({ error: "userId required for service auth" }, { status: 400 });
+    }
+  } else {
+    supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    userId = user.id;
   }
 
   const { linkId, url } = await request.json();
@@ -33,7 +50,7 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", linkId)
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     // Generate AI summary if we have content
     if (extracted.content || extracted.description) {
@@ -52,7 +69,7 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", linkId)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       return NextResponse.json({ success: true, summary });
     } else {
@@ -64,7 +81,7 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", linkId)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       return NextResponse.json({ success: true, summary: null });
     }
@@ -77,7 +94,7 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", linkId)
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     return NextResponse.json(
       { error: "Failed to summarize" },
