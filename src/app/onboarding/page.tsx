@@ -3,7 +3,8 @@
 import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Droplets, ArrowRight, ArrowLeft, Upload, X } from "lucide-react";
+import { Droplets, ArrowRight, ArrowLeft, Upload, X, Link2, Loader2, Check } from "lucide-react";
+import { toast } from "sonner";
 
 const TIMEZONES = [
   "America/New_York",
@@ -40,6 +41,8 @@ export default function OnboardingPage() {
   >([]);
   const [sampleText, setSampleText] = useState("");
   const [sampleSource, setSampleSource] = useState("");
+  const [sampleUrl, setSampleUrl] = useState("");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
   const [timezone, setTimezone] = useState("America/New_York");
   const [digestHour, setDigestHour] = useState(18);
   const [loading, setLoading] = useState(false);
@@ -77,37 +80,87 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleAddUrl = async () => {
+    if (!sampleUrl.trim()) return;
+    setFetchingUrl(true);
+    try {
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: sampleUrl.trim() }),
+      });
+      if (!res.ok) throw new Error("Could not fetch that page");
+      const data = await res.json();
+      if (data.content) {
+        setWritingSamples((prev) => [
+          ...prev,
+          { content: data.content.slice(0, 5000), source: data.title || sampleUrl.trim() },
+        ]);
+        toast.success("Imported writing from URL!");
+        setSampleUrl("");
+      } else {
+        toast.error("Could not extract text from that URL — try pasting the content directly");
+      }
+    } catch {
+      toast.error("Could not fetch that page — try pasting the content directly");
+    } finally {
+      setFetchingUrl(false);
+    }
+  };
+
   const handleComplete = async () => {
     setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Session expired — please log in again");
+        router.push("/login");
+        return;
+      }
 
-    await supabase
-      .from("profiles")
-      .update({
-        display_name: displayName || null,
-        bio: bio || null,
-        voice_description: voiceDescription || null,
-        timezone,
-        digest_hour: digestHour,
-        onboarding_complete: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          display_name: displayName || null,
+          bio: bio || null,
+          voice_description: voiceDescription || null,
+          timezone,
+          digest_hour: digestHour,
+          onboarding_complete: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
 
-    if (writingSamples.length > 0) {
-      await supabase.from("writing_samples").insert(
-        writingSamples.map((s) => ({
-          user_id: user.id,
-          content: s.content,
-          source: s.source,
-        }))
-      );
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+        toast.error("Failed to save profile — please try again");
+        setLoading(false);
+        return;
+      }
+
+      if (writingSamples.length > 0) {
+        const { error: samplesError } = await supabase
+          .from("writing_samples")
+          .insert(
+            writingSamples.map((s) => ({
+              user_id: user.id,
+              content: s.content,
+              source: s.source,
+            }))
+          );
+        if (samplesError) {
+          console.error("Samples insert error:", samplesError);
+        }
+      }
+
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Onboarding error:", err);
+      toast.error("Something went wrong — please try again");
+      setLoading(false);
     }
-
-    router.push("/dashboard");
   };
 
   return (
@@ -190,16 +243,59 @@ export default function OnboardingPage() {
             <div>
               <h2 className="text-2xl font-bold text-text">Writing samples</h2>
               <p className="text-text-secondary mt-1">
-                Paste or upload examples of your writing — blog posts, tweets,
-                newsletters. This is how we learn your voice.
+                Link to your existing writing, paste text, or upload files.
+                This is how we learn your voice.
               </p>
             </div>
 
+            {/* URL import */}
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5">
+                Link to your writing
+              </label>
+              <p className="text-xs text-text-secondary mb-2">
+                Blog posts, LinkedIn articles, Substack newsletters, Medium posts — we&apos;ll read them and learn your style
+              </p>
+              <div className="flex gap-3">
+                <div className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-cream-light border border-border rounded-xl focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary">
+                  <Link2 className="w-4 h-4 text-text-secondary shrink-0" />
+                  <input
+                    type="url"
+                    value={sampleUrl}
+                    onChange={(e) => setSampleUrl(e.target.value)}
+                    className="flex-1 bg-transparent text-sm text-text placeholder:text-text-secondary/50 focus:outline-none"
+                    placeholder="https://your-blog.com/my-post"
+                  />
+                </div>
+                <button
+                  onClick={handleAddUrl}
+                  disabled={!sampleUrl.trim() || fetchingUrl}
+                  className="px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {fetchingUrl ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Reading...
+                    </>
+                  ) : (
+                    "Import"
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-text-secondary text-sm">or paste text</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            {/* Paste text */}
             <div className="space-y-3">
               <textarea
                 value={sampleText}
                 onChange={(e) => setSampleText(e.target.value)}
-                rows={5}
+                rows={4}
                 className="w-full px-4 py-3 bg-cream-light border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-text placeholder:text-text-secondary/50 resize-none"
                 placeholder="Paste a writing sample here..."
               />
@@ -209,7 +305,7 @@ export default function OnboardingPage() {
                   value={sampleSource}
                   onChange={(e) => setSampleSource(e.target.value)}
                   className="flex-1 px-4 py-2.5 bg-cream-light border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-sm text-text placeholder:text-text-secondary/50"
-                  placeholder="Source (optional) — e.g., 'My blog'"
+                  placeholder="Source label (optional)"
                 />
                 <button
                   onClick={addSample}
@@ -223,12 +319,12 @@ export default function OnboardingPage() {
 
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-border" />
-              <span className="text-text-secondary text-sm">or</span>
+              <span className="text-text-secondary text-sm">or upload files</span>
               <div className="flex-1 h-px bg-border" />
             </div>
 
-            <label className="block border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors">
-              <Upload className="w-8 h-8 text-text-secondary mx-auto mb-2" />
+            <label className="block border-2 border-dashed border-border rounded-xl p-5 text-center cursor-pointer hover:border-primary/50 transition-colors">
+              <Upload className="w-6 h-6 text-text-secondary mx-auto mb-1.5" />
               <p className="text-sm text-text-secondary">
                 Upload text files (.txt, .md)
               </p>
@@ -244,6 +340,7 @@ export default function OnboardingPage() {
             {writingSamples.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium text-text">
+                  <Check className="w-4 h-4 inline text-tab-sage mr-1" />
                   {writingSamples.length} sample
                   {writingSamples.length !== 1 ? "s" : ""} added
                 </p>
@@ -252,6 +349,9 @@ export default function OnboardingPage() {
                     key={i}
                     className="flex items-center gap-3 px-4 py-2.5 bg-cream-light border border-border rounded-xl"
                   >
+                    {sample.source.startsWith("http") ? (
+                      <Link2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                    ) : null}
                     <span className="flex-1 text-sm text-text truncate">
                       {sample.source}
                     </span>
