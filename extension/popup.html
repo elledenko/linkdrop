@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #FDF6EC;
+      color: #2D2319;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px;
+      border-bottom: 1px solid #E8DDD0;
+    }
+    .logo {
+      width: 28px;
+      height: 28px;
+      background: #E8720C;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .title { font-weight: 700; font-size: 15px; }
+    .content { padding: 16px; }
+    .status {
+      text-align: center;
+      padding: 20px 0;
+      color: #7A6B5D;
+      font-size: 13px;
+    }
+    .status.success { color: #81B29A; }
+    .status.error { color: #E07A5F; }
+    .page-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .page-url {
+      font-size: 11px;
+      color: #7A6B5D;
+      margin-bottom: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #E8DDD0;
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #FFF8F0;
+      color: #2D2319;
+      resize: none;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    textarea:focus {
+      border-color: #E8720C;
+      box-shadow: 0 0 0 3px rgba(232, 114, 12, 0.15);
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #E8720C;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { background: #D4650A; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .login-prompt {
+      text-align: center;
+      padding: 20px;
+    }
+    .login-prompt a {
+      color: #E8720C;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .login-prompt a:hover { text-decoration: underline; }
+    .note-label {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #7A6B5D;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">D</div>
+    <span class="title">LinkDrop</span>
+  </div>
+  <div class="content" id="content">
+    <div class="status">Loading...</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
